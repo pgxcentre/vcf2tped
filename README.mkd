@@ -1,0 +1,45 @@
+# vcf2tped - VCF to PLINK converter #
+
+_vcf2tped_ is a VCF converter that creates a transposed _pedfile_ compatible
+with the PLINK analysis toolkit. It separates variations in four different
+categories:
+
+1. bi-allelic single nucleotide variations;
+2. multi-allelic single nucleotide variations;
+3. bi-allelic insertions/deletions;
+4. and multi-allelic insertions/deletions.
+
+By splitting the variations in those categories, it enables their analysis with
+the PLINK toolkit (since PLINK cannot work with multi-allelic variations).
+
+
+## Dependencies ##
+
+The tool only requires a standard installation of Python (>= 2.7)[1]. For now,
+it is not compatible with Python 3 and higher.
+
+The tool has been tested on Linux, but should work on Windows and MacOS
+operating softwares as well.
+
+
+## Installation ##
+
+For Linux users, make sure that the script is executable (using the _chmod_
+command). All users, you can execute the script using the following command:
+
+    $ python vcf2tped.py --help
+    usage: vcf2tped.py [-h] --vcf FILE [-o STR]
+
+    Convert a VCF to a TPED (version 0.1).
+
+    optional arguments:
+    -h, --help         show this help message and exit
+
+    Input Files:
+    --vcf FILE         The VCF file.
+
+    Output Files:
+    -o STR, --out STR  The suffix of the output file. [Default: vcf_to_tped]
+
+
+[1]: http://python.org/
