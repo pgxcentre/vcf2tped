@@ -8,6 +8,7 @@ import argparse
 from shutil import copyfile
 from collections import defaultdict
 
+
 # The version of the script
 prog_version = 0.1
 
@@ -27,7 +28,6 @@ def main():
 
     # Converting
     convert_vcf(args.vcf, args.out)
-
 
 
 def convert_vcf(i_filename, o_prefix):
@@ -171,7 +171,6 @@ def convert_vcf(i_filename, o_prefix):
         indel_ref.close()
 
 
-
 def recode_genotype(genotype, encoding, chromosome, position):
     """Encodes the genotypes.
 
@@ -198,7 +197,6 @@ def recode_genotype(genotype, encoding, chromosome, position):
     return "{} {}".format(encoding[genotype[0]], encoding[genotype[1]])
 
 
-
 def print_same_tfams(file_names, sample_names):
     """Print the same TFAM in different files.
 
@@ -221,7 +219,6 @@ def print_same_tfams(file_names, sample_names):
     except IOError:
         msg = "couldn't write output TFAMs"
         raise ProgramError(msg)
-
 
 
 def encode_chr(chrom):
@@ -288,7 +285,6 @@ def encode_chr(chrom):
     raise ProgramError(msg)
 
 
-
 def check_args(args):
     """Checks the arguments and options.
 
@@ -314,7 +310,6 @@ def check_args(args):
     return True
 
 
-
 def parse_args():
     """Parses the command line options and arguments.
 
@@ -334,7 +329,6 @@ def parse_args():
 
     """
     return parser.parse_args()
-
 
 
 class ProgramError(Exception):
@@ -357,7 +351,6 @@ class ProgramError(Exception):
         return self.message
 
 
-
 # The parser object
 desc = """Convert a VCF to a TPED (version {}).""".format(prog_version)
 parser = argparse.ArgumentParser(description=desc)
@@ -373,7 +366,6 @@ group.add_argument("-o", "--out", type=str, metavar="STR",
                    default="vcf_to_tped",
                    help=("The suffix of the output file. "
                          "[Default: %(default)s]"))
-
 
 
 # Calling the main, if necessery
