@@ -110,7 +110,7 @@ def convert_vcf(i_filename, o_prefix):
                             for i in row[header["FORMAT"]+1:]]
 
             # Getting rid of the "." (so that it becomes "./.")
-            genotypes = [re.sub("^.$", "./.", i) for i in genotypes]
+            genotypes = [re.sub("^\.$", "./.", i) for i in genotypes]
 
             # Is this an INDEL?
             indel = False
@@ -154,8 +154,8 @@ def convert_vcf(i_filename, o_prefix):
             first_part = [chrom, name, "0", pos]
 
             genotypes = [i.split("/") for i in genotypes]
-            genotypes = [" ".join((g_map[i[0]], g_map[i[1]]))
-                                            for i in genotypes]
+            genotypes = [recode_genotype(i, g_map, chrom, pos)
+                                                for i in genotypes]
             print >>o_file, "\t".join(first_part + genotypes)
 
             # Saving the alleles
@@ -169,6 +169,33 @@ def convert_vcf(i_filename, o_prefix):
         tped_indel_n.close()
         snv_ref.close()
         indel_ref.close()
+
+
+
+def recode_genotype(genotype, encoding, chromosome, position):
+    """Encodes the genotypes.
+
+    :param genotype: the genotypes (list of alleles)
+    :param encoding: the allele encoding
+    :param chromosome: the chromosome on which the marker is
+    :param position: the position of the marker
+
+    :type genotype: list of str
+    :type encoding: map
+    :type chromosome: str
+    :type position: str
+
+    :returns: a string with the two alleles separated by a space.
+
+    """
+    if len(genotype) == 1:
+        # This is an haploid genotype
+        if chromosome == "23" or chromosome == "24":
+            return " ".join(genotype * 2)
+        else:
+            return " ".join([encoding["."]] * 2)
+
+    return "{} {}".format(encoding[genotype[0]], encoding[genotype[1]])
 
 
 
