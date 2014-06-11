@@ -8,9 +8,11 @@ import argparse
 from shutil import copyfile
 from collections import defaultdict
 
+import pandas
+
 
 # The version of the script
-prog_version = 0.1
+prog_version = 0.2
 
 def main():
     """The main function.
@@ -24,19 +26,47 @@ def main():
     print "# Command used:"
     print "{} \\".format(sys.argv[0])
     print "    --vcf {} \\".format(args.vcf)
+    print "    --ped {} \\".format(args.ped)
     print "    --out {} \\".format(args.out)
 
+    # Reading the ped file
+    sample_info = read_ped(args.ped)
+
     # Converting
-    convert_vcf(args.vcf, args.out)
+    convert_vcf(args.vcf, sample_info, args.out)
 
 
-def convert_vcf(i_filename, o_prefix):
+def read_ped(i_filename):
+    """Reads the PED file to gather sample information.
+
+    :param i_filename: the name of the input file
+    :type i_filename: str
+
+    :returns: sample information
+
+    """
+    # Checking the number of columns of the file
+    with open(i_filename, 'rb') as i_file:
+        if len(i_file.readline().split("\t")) != 6:
+            msg = "{}: wrong number of column".format(i_filename)
+            raise ProgramError(msg)
+
+    data = pandas.read_csv(i_filename, sep="\t",
+                           names=["FID", "IID", "Father", "Mother", "Gender",
+                                  "Status"])
+    data.index = data.IID
+    return data
+
+
+def convert_vcf(i_filename, sample_info, o_prefix):
     """Reads a VCF and creates a TPED/TFAM from it.
 
     :param i_filename: the name of the VCF file (might be gzip).
+    :param sample_info: information about the samples
     :param o_prefix: the prefix of the output files.
 
     :type i_filename: string
+    :type sample_info: pandas.DataFrame
     :type o_prefix: string
 
     """
@@ -73,7 +103,8 @@ def convert_vcf(i_filename, o_prefix):
                       "{}.snv.n_alleles.tfam".format(o_prefix),
                       "{}.indel.2_alleles.tfam".format(o_prefix),
                       "{}.indel.n_alleles.tfam".format(o_prefix)]
-        print_same_tfams(tfam_names, row[header["FORMAT"]+1:])
+        sample_info = print_same_tfams(tfam_names, sample_info,
+                                       row[header["FORMAT"]+1:])
 
         # Those positions have been seen
         seen_pos = defaultdict(int)
@@ -154,8 +185,9 @@ def convert_vcf(i_filename, o_prefix):
             first_part = [chrom, name, "0", pos]
 
             genotypes = [i.split("/") for i in genotypes]
-            genotypes = [recode_genotype(i, g_map, chrom, pos)
-                                                for i in genotypes]
+            genotypes = [recode_genotype(g, g_map, chrom, pos,
+                                         sample_info.iloc[i, 4])
+                                            for i, g in enumerate(genotypes)]
             print >>o_file, "\t".join(first_part + genotypes)
 
             # Saving the alleles
@@ -171,47 +203,62 @@ def convert_vcf(i_filename, o_prefix):
         indel_ref.close()
 
 
-def recode_genotype(genotype, encoding, chromosome, position):
+def recode_genotype(genotype, encoding, chromosome, position, gender):
     """Encodes the genotypes.
 
     :param genotype: the genotypes (list of alleles)
     :param encoding: the allele encoding
     :param chromosome: the chromosome on which the marker is
     :param position: the position of the marker
+    :param gender: the gender of the sample
 
     :type genotype: list of str
     :type encoding: map
     :type chromosome: str
     :type position: str
+    :type gender: int
 
     :returns: a string with the two alleles separated by a space.
 
     """
     if len(genotype) == 1:
         # This is an haploid genotype
-        if chromosome == "23" or chromosome == "24":
-            return " ".join(genotype * 2)
+        if gender == 1:
+            # This is a male
+            if chromosome == "23" or chromosome == "24":
+                return " ".join(genotype * 2)
         else:
             return " ".join([encoding["."]] * 2)
 
     return "{} {}".format(encoding[genotype[0]], encoding[genotype[1]])
 
 
-def print_same_tfams(file_names, sample_names):
+def print_same_tfams(file_names, sample_info, sample_names):
     """Print the same TFAM in different files.
 
     :param file_names: list of output file names
+    :param sample_info: information about the samples
     :param sample_names: the list of samples
 
     :type file_names: list of string
+    :type sample_info: pandas.DataFrame
     :type sample_names: list of string
 
+    :returns: the final TFAM
+
     """
+    # Checking the samples
+    if sorted(sample_names) != sorted(list(sample_info.IID)):
+        msg = "samples in PED are not the same in the VCF"
+        raise ProgramError(msg)
+
+    # Reordering the sample information
+    sample_info = sample_info.loc[sample_names, :]
+
     try:
         # Printing only the first TFAM
-        with open(file_names[0], 'w') as o_file:
-            for name in sample_names:
-                print >>o_file, "\t".join([name] * 2 + ["0"] * 3 + ["-9"])
+        sample_info.to_csv(file_names[0], sep="\t", header=False,
+                           index=False)
 
         # Copying the first TFAM into the others
         for name in file_names[1:]:
@@ -219,6 +266,8 @@ def print_same_tfams(file_names, sample_names):
     except IOError:
         msg = "couldn't write output TFAMs"
         raise ProgramError(msg)
+
+    return sample_info
 
 
 def encode_chr(chrom):
@@ -307,6 +356,10 @@ def check_args(args):
         msg = "{}: not a vcf file".format(args.vcf)
         raise ProgramError(msg)
 
+    if not os.path.isfile(args.ped):
+        msg = "{}: no such file".format(args.ped)
+        raise ProgramError(msg)
+
     return True
 
 
@@ -359,6 +412,8 @@ parser = argparse.ArgumentParser(description=desc)
 group = parser.add_argument_group("Input Files")
 group.add_argument("--vcf", type=str, metavar="FILE", required=True,
                    help="The VCF file.")
+group.add_argument("--ped", type=str, metavar="FILE", required=True,
+                   help="The PED file.")
 
 # The output file
 group = parser.add_argument_group("Output Files")
@@ -368,7 +423,7 @@ group.add_argument("-o", "--out", type=str, metavar="STR",
                          "[Default: %(default)s]"))
 
 
-# Calling the main, if necessery
+# Calling the main, if necessary
 if __name__ == "__main__":
     try:
         main()

@@ -1,5 +1,7 @@
 # vcf2tped - VCF to PLINK converter #
 
+*Version 0.2*
+
 _vcf2tped_ is a VCF converter that creates a transposed _pedfile_ compatible
 with the PLINK analysis toolkit. It separates variations in four different
 categories:
