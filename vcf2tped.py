@@ -12,7 +12,7 @@ import pandas
 
 
 # The version of the script
-prog_version = 0.2
+prog_version = 0.3
 
 def main():
     """The main function.
@@ -70,7 +70,11 @@ def convert_vcf(i_filename, sample_info, o_prefix):
     :type o_prefix: string
 
     """
-    # The open function
+    # Some regular expression
+    single_point_re = re.compile("^\.$")
+    allele_split_re = re.compile("[/|]")
+
+    # The open function to use
     open_f = open
     if re.search("\.gz$", i_filename):
         open_f = gzip.open
@@ -141,7 +145,7 @@ def convert_vcf(i_filename, sample_info, o_prefix):
                             for i in row[header["FORMAT"]+1:]]
 
             # Getting rid of the "." (so that it becomes "./.")
-            genotypes = [re.sub("^\.$", "./.", i) for i in genotypes]
+            genotypes = [single_point_re.sub("./.", i) for i in genotypes]
 
             # Is this an INDEL?
             indel = False
@@ -184,7 +188,7 @@ def convert_vcf(i_filename, sample_info, o_prefix):
             # The first part of the TPED line
             first_part = [chrom, name, "0", pos]
 
-            genotypes = [i.split("/") for i in genotypes]
+            genotypes = [allele_split_re.split(i) for i in genotypes]
             genotypes = [recode_genotype(g, g_map, chrom, pos,
                                          sample_info.iloc[i, 4])
                                             for i, g in enumerate(genotypes)]

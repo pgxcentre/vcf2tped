@@ -1,6 +1,6 @@
 # vcf2tped - VCF to PLINK converter #
 
-*Version 0.2*
+*Version 0.3*
 
 _vcf2tped_ is a VCF converter that creates a transposed _pedfile_ compatible
 with the PLINK analysis toolkit. It separates variations in four different
@@ -32,7 +32,7 @@ command). All users, you can execute the script using the following command:
     $ python vcf2tped.py --help
     usage: vcf2tped.py [-h] --vcf FILE [-o STR]
 
-    Convert a VCF to a TPED (version 0.1).
+    Convert a VCF to a TPED (version 0.3).
 
     optional arguments:
     -h, --help         show this help message and exit
