@@ -43,7 +43,9 @@ import os
 import re
 import sys
 import gzip
+import glob
 import argparse
+import unittest
 from shutil import copyfile
 from collections import defaultdict
 
@@ -54,26 +56,37 @@ import pandas as pd
 __version__ = "0.3"
 
 
-def main():
-    """The main function.
+def main(args=None):
+    """The main function."""
+    # The parser object
+    desc = """Convert a VCF to a TPED (version {}).""".format(__version__)
+    parser = argparse.ArgumentParser(description=desc)
 
-    """
-    # Getting and checking the options
-    args = parse_args()
-    check_args(args)
+    # Running the script
+    try:
+        # Getting and checking the options
+        args = parse_args(parser, args)
+        check_args(args)
 
-    # Summarize the options used
-    print("# Command used:")
-    print("{} \\".format(sys.argv[0]))
-    print("    --vcf {} \\".format(args.vcf))
-    print("    --ped {} \\".format(args.ped))
-    print("    --out {}".format(args.out))
+        # Summarize the options used
+        print("# Command used:")
+        print("{} \\".format(sys.argv[0]))
+        print("    --vcf {} \\".format(args.vcf))
+        print("    --ped {} \\".format(args.ped))
+        print("    --out {}".format(args.out))
 
-    # Reading the ped file
-    sample_info = read_ped(args.ped)
+        # Reading the ped file
+        sample_info = read_ped(args.ped)
 
-    # Converting
-    convert_vcf(args.vcf, sample_info, args.out)
+        # Converting
+        convert_vcf(args.vcf, sample_info, args.out)
+
+    except KeyboardInterrupt:
+        print("Cancelled by user", file=sys.stderr)
+        sys.exit(0)
+
+    except ProgramError as e:
+        parser.error(e.message)
 
 
 def read_ped(i_filename):
@@ -188,7 +201,9 @@ def convert_vcf(i_filename, sample_info, o_prefix):
             g_format = row[header["FORMAT"]].split(":")
             g_format = {name: i for i, name in enumerate(g_format)}
             genotypes = [
-                i.split(":")[g_format["GT"]] for i in row[header["FORMAT"]+1:]
+                "." if single_point_re.match(i)
+                else i.split(":")[g_format["GT"]]
+                for i in row[header["FORMAT"]+1:]
             ]
 
             # Getting rid of the "." (so that it becomes "./.")
@@ -417,7 +432,7 @@ def check_args(args):
     return True
 
 
-def parse_args():
+def parse_args(parser, args=None):
     """Parses the command line options and arguments.
 
     :returns: A :py:class:`argparse.Namespace` object created by the
@@ -430,6 +445,23 @@ def parse_args():
         :py:func:`checkArgs`).
 
     """
+    # The input file
+    group = parser.add_argument_group("Input Files")
+    group.add_argument("--vcf", type=str, metavar="FILE", required=True,
+                       help="The VCF file.")
+    group.add_argument("--ped", type=str, metavar="FILE", required=True,
+                       help="The PED file.")
+
+    # The output file
+    group = parser.add_argument_group("Output Files")
+    group.add_argument("-o", "--out", type=str, metavar="STR",
+                       default="vcf_to_tped",
+                       help=("The suffix of the output file. "
+                             "[Default: %(default)s]"))
+
+    if args is not None:
+        return parser.parse_args(args)
+
     return parser.parse_args()
 
 
@@ -453,31 +485,177 @@ class ProgramError(Exception):
         return self.message
 
 
-# The parser object
-desc = """Convert a VCF to a TPED (version {}).""".format(__version__)
-parser = argparse.ArgumentParser(description=desc)
+class Test(unittest.TestCase):
+    def setUp(self):
+        """Setting up the test cases."""
+        # Setting up the parser information
+        self.prefix = os.path.join("test", "vcf2tped_test")
+        args = [
+            "--vcf", os.path.join("test", "input.vcf"),
+            "--ped", os.path.join("test", "input.ped"),
+            "--out", self.prefix,
+        ]
 
-# The input file
-group = parser.add_argument_group("Input Files")
-group.add_argument("--vcf", type=str, metavar="FILE", required=True,
-                   help="The VCF file.")
-group.add_argument("--ped", type=str, metavar="FILE", required=True,
-                   help="The PED file.")
+        self.suffixes = [".indel.2_alleles.tfam", ".indel.2_alleles.tped",
+                         ".indel.n_alleles.tfam", ".indel.n_alleles.tped",
+                         ".indel.ref", ".snv.2_alleles.tfam",
+                         ".snv.2_alleles.tped", ".snv.n_alleles.tfam",
+                         ".snv.n_alleles.tped", ".snv.ref"]
 
-# The output file
-group = parser.add_argument_group("Output Files")
-group.add_argument("-o", "--out", type=str, metavar="STR",
-                   default="vcf_to_tped",
-                   help=("The suffix of the output file. "
-                         "[Default: %(default)s]"))
+        # Executing the script
+        main(args=args)
+
+    def tearDown(self):
+        """Deletes the output files."""
+        for filename in glob.glob(os.path.join("test", "vcf2tped_test.*")):
+            os.remove(filename)
+
+    def test_output_file_present(self):
+        """Check if all output files are present."""
+        for filename in [self.prefix + suffix for suffix in self.suffixes]:
+            self.assertTrue(os.path.isfile(filename))
+
+    def test_input_file_missing(self):
+        """Tests the script raises an error if an input file is missing."""
+        args = [
+            "--vcf", os.path.join("test", "wrong_input.vcf"),
+            "--ped", os.path.join("test", "input.ped"),
+            "--out", self.prefix,
+        ]
+        with self.assertRaises(SystemExit) as cm:
+            main(args=args)
+            self.assertEqual(cm.exception.code, 2)
+
+        args = [
+            "--vcf", os.path.join("test", "input.vcf"),
+            "--ped", os.path.join("test", "wrong_input.ped"),
+            "--out", self.prefix,
+        ]
+        with self.assertRaises(SystemExit) as cm:
+            main(args=args)
+            self.assertEqual(cm.exception.code, 2)
+
+    def test_missing_samples_in_pedfile(self):
+        """Tests the script raises an error sample missing in pedfile."""
+        args = [
+            "--vcf", os.path.join("test", "input.vcf"),
+            "--ped", os.path.join("test", "missing_samples.ped"),
+            "--out", self.prefix,
+        ]
+        with self.assertRaises(SystemExit) as cm:
+            main(args=args)
+            self.assertEqual(cm.exception.code, 2)
+
+    def test_tfams(self):
+        output = (
+            "HG00096\tHG00096\t0\t0\t0\t-9\n"
+            "HG00097\tHG00097\t0\t0\t0\t-9\n"
+            "HG00099\tHG00099\t0\t0\t0\t-9\n"
+            "HG00100\tHG00100\t0\t0\t0\t-9\n"
+        )
+        for filename in [self.prefix + suffix for suffix in self.suffixes]:
+            if not filename.endswith(".tfam"):
+                continue
+
+            content = None
+            with open(filename, "r") as i_file:
+                content = i_file.read()
+
+            self.assertEqual(output, content)
+
+    def test_snv_2_alleles(self):
+        """Tests the output for SNV with 2 alleles."""
+        output = (
+            "24\trs139377059\t0\t16050678\tC C\tC T\tC T\tT T\n"
+            "22\trs6518357\t0\t16051107\tC C\tC A\tC A\tC C\n"
+            "22\t22:16051453\t0\t16051453\tG G\t0 0\tC G\tG C\n"
+            "22\t22:16051453-2\t0\t16051453\tA A\tC A\tC A\tA A\n"
+            "23\trs79725552\t0\t16051480\tT T\tT C\tT C\tT T\n"
+            "23\trs79725552-2\t0\t16051480\tT T\tT C\tT C\tT T\n"
+            "26\trs79725552-3\t0\t16051480\tT T\tT C\tT C\tT T\n"
+        )
+
+        content = None
+        with open(self.prefix + ".snv.2_alleles.tped", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
+
+    def test_snv_n_alleles(self):
+        """Tests the output for SNV with more than 2 alleles."""
+        output = (
+            "22\trs188945759\t0\t16050984\tC A\tC C\tC G\tG A\n"
+        )
+
+        content = None
+        with open(self.prefix + ".snv.n_alleles.tped", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
+
+    def test_snv_ref(self):
+        """Checks the content of the SNV ref file."""
+        output = (
+            "24\t16050678\trs139377059\tC\tT\n"
+            "22\t16050984\trs188945759\tC\tG,A\n"
+            "22\t16051107\trs6518357\tC\tA\n"
+            "22\t16051453\t22:16051453\tG\tC\n"
+            "22\t16051453\t22:16051453-2\tA\tC\n"
+            "23\t16051480\trs79725552\tT\tC\n"
+            "23\t16051480\trs79725552-2\tT\tC\n"
+            "26\t16051480\trs79725552-3\tT\tC\n"
+        )
+
+        content = None
+        with open(self.prefix + ".snv.ref", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
+
+    def test_indel_2_alleles(self):
+        """Tests the output for INDEL with 2 alleles."""
+        output = (
+            "22\trs149201999\t0\t16050408\t1 1\t1 2\t1 2\t1 1\n"
+            "22\trs146752890\t0\t16050612\t1 2\t1 2\t0 0\t1 1\n"
+            "22\t22:16051453-3\t0\t16051453\t1 1\t1 1\t1 1\t0 0\n"
+            "1\trs1234\t0\t16051453\t1 1\t1 1\t1 1\t0 0\n"
+        )
+
+        content = None
+        with open(self.prefix + ".indel.2_alleles.tped", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
+
+    def test_indel_n_alleles(self):
+        """Tests the output for INDEL with n alleles."""
+        output = (
+            "22\trs62224609\t0\t16051249\t1 1\t2 1\t2 1\t2 3\n"
+        )
+
+        content = None
+        with open(self.prefix + ".indel.n_alleles.tped", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
+
+    def test_indel_ref(self):
+        """Checks the content of the INDEL ref file."""
+        output = (
+            "22\t16050408\trs149201999\tT\tCC\n"
+            "22\t16050612\trs146752890\tCC\tC\n"
+            "22\t16051249\trs62224609\tT\tTC,TCC\n"
+            "22\t16051453\t22:16051453-3\tC\tCA\n"
+            "1\t16051453\trs1234\tC\tCA\n"
+        )
+
+        content = None
+        with open(self.prefix + ".indel.ref", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
 
 
 # Calling the main, if necessary
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("Cancelled by user", file=sys.stderr)
-        sys.exit(0)
-    except ProgramError as e:
-        parser.error(e.message)
+    main()

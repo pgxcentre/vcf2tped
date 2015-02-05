@@ -1,0 +1,43 @@
+##fileformat=VCFv4.1
+##INFO=<ID=LDAF,Number=1,Type=Float,Description="MLE Allele Frequency Accounting for LD">
+##INFO=<ID=AVGPOST,Number=1,Type=Float,Description="Average posterior probability from MaCH/Thunder">
+##INFO=<ID=RSQ,Number=1,Type=Float,Description="Genotype imputation quality from MaCH/Thunder">
+##INFO=<ID=ERATE,Number=1,Type=Float,Description="Per-marker Mutation rate from MaCH/Thunder">
+##INFO=<ID=THETA,Number=1,Type=Float,Description="Per-marker Transition rate from MaCH/Thunder">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END for imprecise variants">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise variants">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=HOMLEN,Number=.,Type=Integer,Description="Length of base pair identical micro-homology at event breakpoints">
+##INFO=<ID=HOMSEQ,Number=.,Type=String,Description="Sequence of base pair identical micro-homology at event breakpoints">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=AC,Number=.,Type=Integer,Description="Alternate Allele Count">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Allele Count">
+##ALT=<ID=DEL,Description="Deletion">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DS,Number=1,Type=Float,Description="Genotype dosage from MaCH/Thunder">
+##FORMAT=<ID=GL,Number=.,Type=Float,Description="Genotype Likelihoods">
+##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral Allele, ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments/README">
+##INFO=<ID=AF,Number=1,Type=Float,Description="Global Allele Frequency based on AC/AN">
+##INFO=<ID=AMR_AF,Number=1,Type=Float,Description="Allele Frequency for samples from AMR based on AC/AN">
+##INFO=<ID=ASN_AF,Number=1,Type=Float,Description="Allele Frequency for samples from ASN based on AC/AN">
+##INFO=<ID=AFR_AF,Number=1,Type=Float,Description="Allele Frequency for samples from AFR based on AC/AN">
+##INFO=<ID=EUR_AF,Number=1,Type=Float,Description="Allele Frequency for samples from EUR based on AC/AN">
+##INFO=<ID=VT,Number=1,Type=String,Description="indicates what type of variant the line represents">
+##INFO=<ID=SNPSOURCE,Number=.,Type=String,Description="indicates if a snp was called when analysing the low coverage or exome alignment data">
+##reference=GRCh37
+##reference=GRCh37
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	HG00096	HG00097	HG00099	HG00100
+22	16050408	rs149201999	T	CC	100	PASS	LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06	GT:DS:GL	0/0:0.050:-0.03,-1.17,-5.00	0|1:0.900:-0.71,-0.09,-5.00	0|1:1.000:-4.10,-0.00,-3.28	0|0:0.050:-0.11,-0.67,-3.92
+22	16050612	rs146752890	CC	C	100	PASS	AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07	GT:DS:GL	0|1:1.000:-2.05,-0.01,-1.71	0|1:1.000:-0.86,-0.06,-5.00	./.	0|0:0.000:-0.18,-0.47,-2.16
+Y	16050678	rs139377059	C	T	100	PASS	THETA=0.0050;AVGPOST=0.9904;RSQ=0.9240;AN=2184;VT=SNP;AA=.;AC=113;SNPSOURCE=LOWCOV;LDAF=0.0519;ERATE=0.0006;AF=0.05;ASN_AF=0.04;AMR_AF=0.04;AFR_AF=0.07;EUR_AF=0.06	GT:DS:GL	0|0:0.000:-0.02,-1.37,-5.00	0/1:1.000:-3.80,-0.00,-3.27	0|1:1.000:-3.62,-0.00,-4.40	1|1:0.000:-0.19,-0.46,-2.06
+22	16050984	rs188945759	C	G,A	100	PASS	ERATE=0.0004;AN=2184;THETA=0.0266;VT=SNP;AA=.;LDAF=0.0028;AC=5;RSQ=0.7453;SNPSOURCE=LOWCOV;AVGPOST=0.9984;AF=0.0023;AFR_AF=0.01	GT:DS:GL	0/2:0.000:-0.01,-1.84,-5.00	0|0:0.000:-0.05,-0.95,-5.00	0|1:0.000:-0.02,-1.45,-5.00	1|2:0.000:-0.48,-0.48,-0.48
+22	16051107	rs6518357	C	A	100	PASS	ERATE=0.0004;THETA=0.0136;RSQ=0.9631;AN=2184;VT=SNP;AA=.;AC=127;LDAF=0.0582;AVGPOST=0.9948;SNPSOURCE=LOWCOV;AF=0.06;ASN_AF=0.04;AMR_AF=0.06;AFR_AF=0.08;EUR_AF=0.06	GT:DS:GL	0|0:0.000:-0.00,-3.13,-5.00	0|1:1.000:-4.22,-0.00,-2.28	0|1:1.000:-5.00,-0.00,-2.56	0|0:0.000:-0.10,-0.67,-3.92
+22	16051249	rs62224609	T	TC,TCC	100	PASS	ERATE=0.0004;AN=2184;RSQ=0.9729;AVGPOST=0.9952;VT=SNP;AA=.;THETA=0.0053;SNPSOURCE=LOWCOV;LDAF=0.0715;AC=157;AF=0.07;ASN_AF=0.07;AMR_AF=0.12;AFR_AF=0.01;EUR_AF=0.09	GT:DS:GL	0|0:0.000:-0.01,-1.74,-5.00	1|0:1.000:-5.00,0.00,-5.00	1|0:1.000:-5.00,0.00,-5.00	1|2:0.000:-0.03,-1.19,-5.00
+22	16051453	.	G	C	100	PASS	AN=2184;LDAF=0.2989;VT=SNP;AA=.;AC=650;THETA=0.0059;AVGPOST=0.9524;RSQ=0.9035;SNPSOURCE=LOWCOV;ERATE=0.0015;AF=0.30;ASN_AF=0.25;AMR_AF=0.28;AFR_AF=0.32;EUR_AF=0.33	GT:DS:GL	0|0:0.000:-0.02,-1.39,-5.00	./.:0.950:-0.42,-0.21,-5.00	1|0:1.000:-0.19,-0.46,-5.00	0|1:1.000:-5.00,-0.66,-0.11
+22	16051453	.	A	C	100	PASS	AC=160;THETA=0.0021;AN=2184;ERATE=0.0009;AVGPOST=0.9935;VT=SNP;AA=.;RSQ=0.9650;LDAF=0.0725;SNPSOURCE=LOWCOV;AF=0.07;ASN_AF=0.07;AMR_AF=0.12;AFR_AF=0.01;EUR_AF=0.09	GT:DS:GL	0|0:0.000:-0.00,-2.30,-5.00	1|0:1.000:-3.52,-0.00,-5.00	1|0:1.000:-1.84,-0.01,-5.00	0|0:0.000:-0.02,-1.45,-5.00
+22	16051453	.	C	CA	100	PASS	ERATE=0.0004;RSQ=0.6321;AVGPOST=0.9985;LDAF=0.0016;AN=2184;VT=SNP;AA=.;THETA=0.0033;SNPSOURCE=LOWCOV;AC=2;AF=0.0009;EUR_AF=0.0026	GT:DS:GL	0|0:0.000:-0.00,-2.97,-5.00	0|0:0.000:-0.00,-2.40,-5.00	0|0:0.000:-0.00,-2.69,-5.00	.
+chrX	16051480	rs79725552	T	C	100	PASS	ERATE=0.0004;AC=126;RSQ=0.9707;AN=2184;LDAF=0.0569;VT=SNP;AA=.;SNPSOURCE=LOWCOV;THETA=0.0063;AVGPOST=0.9960;AF=0.06;ASN_AF=0.04;AMR_AF=0.06;AFR_AF=0.07;EUR_AF=0.06	GT:DS:GL	0|0:0.000:-0.00,-3.01,-5.00	0|1:1.000:-5.00,0.00,-5.00	0|1:1.000:-5.00,0.00,-5.00	0|0:0.000:-0.00,-2.00,-5.00
+X	16051480	rs79725552	T	C	100	PASS	ERATE=0.0004;AC=126;RSQ=0.9707;AN=2184;LDAF=0.0569;VT=SNP;AA=.;SNPSOURCE=LOWCOV;THETA=0.0063;AVGPOST=0.9960;AF=0.06;ASN_AF=0.04;AMR_AF=0.06;AFR_AF=0.07;EUR_AF=0.06	GT:DS:GL	0|0:0.000:-0.00,-3.01,-5.00	0|1:1.000:-5.00,0.00,-5.00	0|1:1.000:-5.00,0.00,-5.00	0|0:0.000:-0.00,-2.00,-5.00
+MT	16051480	rs79725552	T	C	100	PASS	ERATE=0.0004;AC=126;RSQ=0.9707;AN=2184;LDAF=0.0569;VT=SNP;AA=.;SNPSOURCE=LOWCOV;THETA=0.0063;AVGPOST=0.9960;AF=0.06;ASN_AF=0.04;AMR_AF=0.06;AFR_AF=0.07;EUR_AF=0.06	GT:DS:GL	0|0:0.000:-0.00,-3.01,-5.00	0|1:1.000:-5.00,0.00,-5.00	0|1:1.000:-5.00,0.00,-5.00	0|0:0.000:-0.00,-2.00,-5.00
+1	16051453	rs1234	C	CA	100	PASS	ERATE=0.0004;RSQ=0.6321;AVGPOST=0.9985;LDAF=0.0016;AN=2184;VT=SNP;AA=.;THETA=0.0033;SNPSOURCE=LOWCOV;AC=2;AF=0.0009;EUR_AF=0.0026	DM:GT:DS:GL	XX:0|0:0.000:-0.00,-2.97,-5.00	XX:0|0:0.000:-0.00,-2.40,-5.00	XX:0|0:0.000:-0.00,-2.69,-5.00	.
