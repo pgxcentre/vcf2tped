@@ -29,7 +29,7 @@ operating softwares as well.
 For Linux users, make sure that the script is executable (using the _chmod_
 command). All users, you can execute the script using the following command:
 
-```sqlite
+```console
 $ vcf2tped.py --help
 usage: vcf2tped.py [-h] --vcf FILE --ped FILE [-o STR]
 
