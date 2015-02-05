@@ -289,18 +289,11 @@ def recode_genotype(genotype, encoding, chromosome, position, gender):
 
     """
     if len(genotype) == 1:
-        print([gender, chromosome])
         # This is an haploid genotype
         if gender == 1 and (chromosome == "23" or chromosome == "24"):
             return " ".join(encoding[genotype[0]] * 2)
         else:
             return " ".join([encoding["."]] * 2)
-
-    elif gender == 1 and (chromosome == "23" or chromosome == "24"):
-        return " ".join([encoding["."]] * 2)
-
-    if gender == 2 and chromosome == "24":
-        return " ".join([encoding["."]] * 2)
 
     return "{} {}".format(encoding[genotype[0]], encoding[genotype[1]])
 
@@ -683,8 +676,8 @@ class Test(unittest.TestCase):
             "22\trs149201\t0\t16050408\t0 0\t0 0\t0 0\n"
             "23\trs149202\t0\t16050408\t0 0\t0 0\tT T\n"
             "24\trs149203\t0\t16050408\t0 0\t0 0\tT T\n"
-            "24\trs149204\t0\t16050408\t0 0\tT C\t0 0\n"
-            "23\trs149205\t0\t16050408\tT T\tT C\t0 0\n"
+            "24\trs149204\t0\t16050408\tT T\tT C\tT C\n"
+            "23\trs149205\t0\t16050408\tT T\tT C\tT C\n"
         )
 
         content = None
