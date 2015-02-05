@@ -94,8 +94,8 @@ def read_ped(i_filename):
     data = pd.read_csv(i_filename, sep="\t",
                        names=["FID", "IID", "Father", "Mother", "Gender",
                               "Status"])
-    data.index = data.IID
-    return data
+
+    return data.set_index("IID", drop=False, verify_integrity=True)
 
 
 def convert_vcf(i_filename, sample_info, o_prefix):
