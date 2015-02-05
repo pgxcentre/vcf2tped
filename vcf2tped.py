@@ -43,7 +43,6 @@ import os
 import re
 import sys
 import gzip
-import glob
 import argparse
 import unittest
 from shutil import copyfile
@@ -290,13 +289,18 @@ def recode_genotype(genotype, encoding, chromosome, position, gender):
 
     """
     if len(genotype) == 1:
+        print([gender, chromosome])
         # This is an haploid genotype
-        if gender == 1:
-            # This is a male
-            if chromosome == "23" or chromosome == "24":
-                return " ".join(genotype * 2)
+        if gender == 1 and (chromosome == "23" or chromosome == "24"):
+            return " ".join(encoding[genotype[0]] * 2)
         else:
             return " ".join([encoding["."]] * 2)
+
+    elif gender == 1 and (chromosome == "23" or chromosome == "24"):
+        return " ".join([encoding["."]] * 2)
+
+    if gender == 2 and chromosome == "24":
+        return " ".join([encoding["."]] * 2)
 
     return "{} {}".format(encoding[genotype[0]], encoding[genotype[1]])
 
@@ -505,9 +509,27 @@ class Test(unittest.TestCase):
         # Executing the script
         main(args=args)
 
+        # Now the test for the gender
+        self.prefix_gender = os.path.join("test", "vcf2tped_gender_test")
+        args = [
+            "--vcf", os.path.join("test", "input.gender.vcf"),
+            "--ped", os.path.join("test", "input.gender.ped"),
+            "--out", self.prefix_gender,
+        ]
+
+        # Executing the script
+        main(args=args)
+
     def tearDown(self):
         """Deletes the output files."""
-        for filename in glob.glob(os.path.join("test", "vcf2tped_test.*")):
+        import glob
+
+        # Deleting files for the main test
+        for filename in glob.glob(self.prefix + ".*"):
+            os.remove(filename)
+
+        # Deleting files for the gender test
+        for filename in glob.glob(self.prefix_gender + ".*"):
             os.remove(filename)
 
     def test_output_file_present(self):
@@ -651,6 +673,22 @@ class Test(unittest.TestCase):
 
         content = None
         with open(self.prefix + ".indel.ref", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
+
+    def test_gender(self):
+        """Tests effect of gender on genotypes."""
+        output = (
+            "22\trs149201\t0\t16050408\t0 0\t0 0\t0 0\n"
+            "23\trs149202\t0\t16050408\t0 0\t0 0\tT T\n"
+            "24\trs149203\t0\t16050408\t0 0\t0 0\tT T\n"
+            "24\trs149204\t0\t16050408\t0 0\tT C\t0 0\n"
+            "23\trs149205\t0\t16050408\tT T\tT C\t0 0\n"
+        )
+
+        content = None
+        with open(self.prefix_gender + ".snv.2_alleles.tped", "r") as i_file:
             content = i_file.read()
 
         self.assertEqual(output, content)
