@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/pgxcentre/vcf2tped.svg?branch=master)](https://travis-ci.org/pgxcentre/vcf2tped)
+
+
 # vcf2tped - VCF to PLINK converter #
 
 *Version 0.3*
