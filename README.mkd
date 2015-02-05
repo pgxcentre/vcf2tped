@@ -26,7 +26,7 @@ operating softwares as well.
 
 ## Installation ##
 
-For Linux users, make sure that the script is executable (using the _chmod_
+For Linux users, make sure that the script is executable (using the `chmod`
 command). All users, you can execute the script using the following command:
 
 ```console
@@ -46,3 +46,43 @@ Output Files:
   -o STR, --out STR  The suffix of the output file. [Default: vcf_to_tped]
 ```
 
+
+## Example run ##
+
+Here is an example of a simple run of the script.
+
+```console
+$ ../vcf2tped.py --vcf input.vcf --ped input.ped 
+# Command used:
+../vcf2tped.py \
+    --vcf input.vcf \
+    --ped input.ped \
+    --out vcf_to_tped
+```
+
+The following files should have been created:
+
+* `vcf_to_tped.indel.2_alleles.tfam` and `vcf_to_tped.indel.2_alleles.tped`:
+  the *tped* and *tfam* files for the INDELs with 2 alleles.
+* `vcf_to_tped.indel.n_alleles.tfam` and `vcf_to_tped.indel.n_alleles.tped`:
+  the *tped* and *tfam* files for the INDELs with more than 2 alleles.
+* `vcf_to_tped.indel.ref`: a file describing the reference and alternative
+  allele(s) of the INDELs. The reference allele is coded as 1, and the
+  alternative allele(s) as 2 and higher in the *tped* file.
+* `vcf_to_tped.snv.2_alleles.tfam` and `vcf_to_tped.snv.2_alleles.tped`: the
+  *tped* and *tfam* files for the SNVs with 2 alleles.
+* `vcf_to_tped.snv.n_alleles.tfam` and `vcf_to_tped.snv.n_alleles.tped`: the
+  *tped* and *tfam* files for the SNVs with more than 2 alleles.
+* `vcf_to_tped.snv.ref`: a file describing the reference and alternative
+  allele(s) of the SNVs.
+
+In all cases, missing genotypes are coded as `0 0`.
+
+
+## Testing ##
+
+Basic testing is available.
+
+```console
+$ python -m unittest -q vcf2tped
+```
