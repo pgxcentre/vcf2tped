@@ -1,5 +1,44 @@
 #!/usr/bin/env python
 
+
+# Script to create transposed pedfile from VCF file
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2015 Beaulieu-Saucier Pharmacogenomics Centre
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+
+from __future__ import print_function
+
+
+__author__ = "Louis-Philippe Lemieux Perreault"
+__copyright__ = ("Copyright 2015 Louis-Philippe Lemieux Perreault. "
+                 "All rights reserved.")
+__license__ = "MIT"
+__credits__ = ["Louis-Philippe Lemieux Perreault", ]
+__maintainer__ = "Louis-Philippe Lemieux Perreault"
+__email__ = "louis-philippe.lemieux.perreault@statgen.org"
+__status__ = "Development"
+
+
 import os
 import re
 import sys
@@ -8,11 +47,12 @@ import argparse
 from shutil import copyfile
 from collections import defaultdict
 
-import pandas
+import pandas as pd
 
 
 # The version of the script
-prog_version = 0.3
+__version__ = "0.3"
+
 
 def main():
     """The main function.
@@ -23,11 +63,11 @@ def main():
     check_args(args)
 
     # Summarize the options used
-    print "# Command used:"
-    print "{} \\".format(sys.argv[0])
-    print "    --vcf {} \\".format(args.vcf)
-    print "    --ped {} \\".format(args.ped)
-    print "    --out {} \\".format(args.out)
+    print("# Command used:")
+    print("{} \\".format(sys.argv[0]))
+    print("    --vcf {} \\".format(args.vcf))
+    print("    --ped {} \\".format(args.ped))
+    print("    --out {}".format(args.out))
 
     # Reading the ped file
     sample_info = read_ped(args.ped)
@@ -46,14 +86,14 @@ def read_ped(i_filename):
 
     """
     # Checking the number of columns of the file
-    with open(i_filename, 'rb') as i_file:
+    with open(i_filename, "r") as i_file:
         if len(i_file.readline().split("\t")) != 6:
             msg = "{}: wrong number of column".format(i_filename)
             raise ProgramError(msg)
 
-    data = pandas.read_csv(i_filename, sep="\t",
-                           names=["FID", "IID", "Father", "Mother", "Gender",
-                                  "Status"])
+    data = pd.read_csv(i_filename, sep="\t",
+                       names=["FID", "IID", "Father", "Mother", "Gender",
+                              "Status"])
     data.index = data.IID
     return data
 
@@ -81,11 +121,11 @@ def convert_vcf(i_filename, sample_info, o_prefix):
 
     # Reading the file
     with open_f(i_filename, 'rb') as i_file:
-        line = i_file.readline()
+        line = i_file.readline().decode()
 
         # We read until the header
         while re.search("^##", line) is not None:
-            line = i_file.readline()
+            line = i_file.readline().decode()
 
         # This should be the header
         if re.search("^##CHROM", line) is not None:
@@ -122,8 +162,14 @@ def convert_vcf(i_filename, sample_info, o_prefix):
         try:
             tped_snv_2 = open("{}.snv.2_alleles.tped".format(o_prefix), 'w')
             tped_snv_n = open("{}.snv.n_alleles.tped".format(o_prefix), 'w')
-            tped_indel_2 = open("{}.indel.2_alleles.tped".format(o_prefix), "w")
-            tped_indel_n = open("{}.indel.n_alleles.tped".format(o_prefix), "w")
+            tped_indel_2 = open(
+                "{}.indel.2_alleles.tped".format(o_prefix),
+                "w",
+            )
+            tped_indel_n = open(
+                "{}.indel.n_alleles.tped".format(o_prefix),
+                "w",
+            )
             snv_ref = open("{}.snv.ref".format(o_prefix), "w")
             indel_ref = open("{}.indel.ref".format(o_prefix), "w")
         except IOError:
@@ -132,7 +178,7 @@ def convert_vcf(i_filename, sample_info, o_prefix):
 
         # Reading the rest of the data
         for line in i_file:
-            row = line.rstrip("\r\n").split("\t")
+            row = line.decode().rstrip("\r\n").split("\t")
 
             # Getting the information
             chrom = encode_chr(row[header["#CHROM"]])
@@ -141,8 +187,9 @@ def convert_vcf(i_filename, sample_info, o_prefix):
             alleles = [row[header["REF"]]] + row[header["ALT"]].split(",")
             g_format = row[header["FORMAT"]].split(":")
             g_format = {name: i for i, name in enumerate(g_format)}
-            genotypes = [i.split(":")[g_format["GT"]]
-                            for i in row[header["FORMAT"]+1:]]
+            genotypes = [
+                i.split(":")[g_format["GT"]] for i in row[header["FORMAT"]+1:]
+            ]
 
             # Getting rid of the "." (so that it becomes "./.")
             genotypes = [single_point_re.sub("./.", i) for i in genotypes]
@@ -164,7 +211,7 @@ def convert_vcf(i_filename, sample_info, o_prefix):
             g_map = {str(i): a for i, a in enumerate(alleles)}
             if indel:
                 # This is a new genotype map, only for INDELs
-                g_map = {str(i): str(i+1) for i in xrange(len(alleles))}
+                g_map = {str(i): str(i+1) for i in range(len(alleles))}
 
                 # These are the required files
                 o_ref_file = indel_ref
@@ -189,14 +236,16 @@ def convert_vcf(i_filename, sample_info, o_prefix):
             first_part = [chrom, name, "0", pos]
 
             genotypes = [allele_split_re.split(i) for i in genotypes]
-            genotypes = [recode_genotype(g, g_map, chrom, pos,
-                                         sample_info.iloc[i, 4])
-                                            for i, g in enumerate(genotypes)]
-            print >>o_file, "\t".join(first_part + genotypes)
+            genotypes = [
+                recode_genotype(g, g_map, chrom, pos, sample_info.iloc[i, 4])
+                for i, g in enumerate(genotypes)
+            ]
+            print("\t".join(first_part + genotypes), file=o_file)
 
             # Saving the alleles
-            print >>o_ref_file, "\t".join([chrom, pos, name, alleles[0],
-                                           ",".join(alleles[1:])])
+            print("\t".join([chrom, pos, name, alleles[0],
+                             ",".join(alleles[1:])]),
+                  file=o_ref_file)
 
         # Closing the output files
         tped_snv_2.close()
@@ -280,8 +329,8 @@ def encode_chr(chrom):
     :param chrom: the chromosome to encode
     :type chrom: string
 
-    Remove the leading "chr" if necessary, and encodes sex chromosomes and other
-    to their numeric counterpart.
+    Remove the leading "chr" if necessary, and encodes sex chromosomes and
+    other to their numeric counterpart.
 
         - X    X chromosome                    -> 23
         - Y    Y chromosome                    -> 24
@@ -356,7 +405,8 @@ def check_args(args):
         msg = "{}: no such file".format(args.vcf)
         raise ProgramError(msg)
 
-    if not (re.search("\.vcf$", args.vcf) or re.search("\.vcf\.gz$", args.vcf)):
+    if not ((re.search("\.vcf$", args.vcf)
+            or re.search("\.vcf\.gz$", args.vcf))):
         msg = "{}: not a vcf file".format(args.vcf)
         raise ProgramError(msg)
 
@@ -371,13 +421,8 @@ def parse_args():
     """Parses the command line options and arguments.
 
     :returns: A :py:class:`argparse.Namespace` object created by the
-              :py:mod:`argparse` module. It contains the values of the different
-              options.
-
-    ===============   =======  ================================================
-        Options        Type                      Description
-    ===============   =======  ================================================
-    ===============   =======  ================================================
+              :py:mod:`argparse` module. It contains the values of the
+              different options.
 
     .. note::
         No option check is done here (except for the one automatically done by
@@ -390,7 +435,7 @@ def parse_args():
 
 class ProgramError(Exception):
     """An :py:class:`Exception` raised in case of a problem.
-    
+
     :param msg: the message to print to the user before exiting.
     :type msg: string
 
@@ -409,7 +454,7 @@ class ProgramError(Exception):
 
 
 # The parser object
-desc = """Convert a VCF to a TPED (version {}).""".format(prog_version)
+desc = """Convert a VCF to a TPED (version {}).""".format(__version__)
 parser = argparse.ArgumentParser(description=desc)
 
 # The input file
@@ -432,7 +477,7 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print >>sys.stderr, "Cancelled by user"
+        print("Cancelled by user", file=sys.stderr)
         sys.exit(0)
     except ProgramError as e:
         parser.error(e.message)
