@@ -1,0 +1,10 @@
+[run]
+branch = True
+source = vcf2tped
+
+[report]
+exclude_lines = 
+    pragma: no cover
+
+[html]
+title = Coverage report - project_x
