@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/pgxcentre/vcf2tped.svg?branch=master)](https://travis-ci.org/pgxcentre/vcf2tped)
-
+[![Coverage Status](https://coveralls.io/repos/github/pgxcentre/vcf2tped/badge.svg)](https://coveralls.io/github/pgxcentre/vcf2tped)
 
 # vcf2tped - VCF to PLINK converter #
 
