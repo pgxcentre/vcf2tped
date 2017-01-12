@@ -7,4 +7,4 @@ exclude_lines =
     pragma: no cover
 
 [html]
-title = Coverage report - project_x
+title = Coverage report - vcf2tped
