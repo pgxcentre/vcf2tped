@@ -62,7 +62,7 @@ Output Files:
 Here is an example of a simple run of the script.
 
 ```console
-$ vcf2tped.py --vcf input.vcf --ped input.ped 
+$ vcf2tped.py --vcf input.vcf --ped input.ped
 # Command used:
 ../vcf2tped.py \
     --vcf input.vcf \
