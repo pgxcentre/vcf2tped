@@ -660,6 +660,22 @@ class TestVCF2TPED(unittest.TestCase):
             logs.output,
         )
 
+    def test_invalid_chromosomes(self):
+        """Tests an invalid chromosome."""
+        # Invalid int chromosome
+        with self.assertRaises(ProgramError) as cm:
+            encode_chr("0")
+        self.assertEqual("0: not a valid chromosome", cm.exception.message)
+
+        # Invalid str chromosome
+        with self.assertRaises(ProgramError) as cm:
+            encode_chr("XYZ")
+        self.assertEqual("XYZ: not a valid chromosome", cm.exception.message)
+
+    def test_xy_chromosome(self):
+        """Tests the XY chromosome."""
+        self.assertEqual("25", encode_chr("XY"))
+
     def test_tfams(self):
         output = (
             "HG00096\tHG00096\t0\t0\t0\t-9\n"
