@@ -491,6 +491,12 @@ def parse_args(parser, args=None):
         :py:func:`checkArgs`).
 
     """
+    parser.add_argument(
+        "-v", "--version", action="version",
+        version="{} version {}".format(os.path.basename(sys.argv[0]),
+                                       __version__),
+    )
+
     # The input file
     group = parser.add_argument_group("Input Files")
     group.add_argument(
