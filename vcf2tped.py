@@ -54,7 +54,7 @@ __status__ = "Development"
 
 
 # The version of the script
-__version__ = "0.3"
+__version__ = "0.4"
 
 
 # The testing mode
