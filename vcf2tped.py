@@ -32,6 +32,8 @@ import os
 import re
 import sys
 import gzip
+import shlex
+import logging
 import argparse
 import unittest
 from shutil import copyfile
@@ -54,6 +56,14 @@ __status__ = "Development"
 __version__ = "0.3"
 
 
+# The testing mode
+_TESTING_MODE = False
+
+
+# Configuring the log
+logger = logging.getLogger("vcf2tped")
+
+
 def main(args=None):
     """The main function."""
     # The parser object
@@ -66,12 +76,22 @@ def main(args=None):
         args = parse_args(parser, args)
         check_args(args)
 
-        # Summarize the options used
-        print("# Command used:")
-        print("{} \\".format(sys.argv[0]))
-        print("    --vcf {} \\".format(args.vcf))
-        print("    --ped {} \\".format(args.ped))
-        print("    --out {}".format(args.out))
+        if not _TESTING_MODE:
+            sh = logging.StreamHandler()
+            sh.setFormatter(logging.Formatter(
+                fmt="[%(asctime)s %(levelname)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            ))
+            logger.addHandler(sh)
+            logger.setLevel(logging.INFO)
+
+        logger.info("This is {script_name} version {version}".format(
+            script_name=os.path.basename(sys.argv[0]),
+            version=__version__,
+        ))
+        logger.info("Arguments: {}".format(
+            " ".join(shlex.quote(part) for part in sys.argv[1:]),
+        ))
 
         # Reading the ped file
         sample_info = read_ped(args.ped)
@@ -80,10 +100,11 @@ def main(args=None):
         convert_vcf(args.vcf, sample_info, args.out)
 
     except KeyboardInterrupt:
-        print("Cancelled by user", file=sys.stderr)
+        logger.info("Cancelled by user", file=sys.stderr)
         sys.exit(0)
 
     except ProgramError as e:
+        logger.error(e.message)
         parser.error(e.message)
 
 
@@ -250,7 +271,8 @@ def convert_vcf(i_filename, sample_info, o_prefix):
 
             genotypes = [allele_split_re.split(i) for i in genotypes]
             genotypes = [
-                recode_genotype(g, g_map, chrom, pos, sample_info.iloc[i, 4])
+                recode_genotype(g, g_map, chrom, pos, sample_info.iloc[i, 0],
+                                sample_info.iloc[i, 4])
                 for i, g in enumerate(genotypes)
             ]
             print("\t".join(first_part + genotypes), file=o_file)
@@ -269,19 +291,21 @@ def convert_vcf(i_filename, sample_info, o_prefix):
         indel_ref.close()
 
 
-def recode_genotype(genotype, encoding, chromosome, position, gender):
+def recode_genotype(genotype, encoding, chromosome, position, sample, gender):
     """Encodes the genotypes.
 
     :param genotype: the genotypes (list of alleles)
     :param encoding: the allele encoding
     :param chromosome: the chromosome on which the marker is
     :param position: the position of the marker
+    :param sample: the ID of the sample
     :param gender: the gender of the sample
 
     :type genotype: list of str
     :type encoding: map
     :type chromosome: str
     :type position: str
+    :type sample: str
     :type gender: int
 
     :returns: a string with the two alleles separated by a space.
@@ -292,6 +316,13 @@ def recode_genotype(genotype, encoding, chromosome, position, gender):
         if gender == 1 and (chromosome == "23" or chromosome == "24"):
             return " ".join(encoding[genotype[0]] * 2)
         else:
+            logger.warning(
+                "chr{chrom}:{pos}: {sample} (gender {gender}): haploid call "
+                "set as no call".format(
+                    chrom=chromosome, pos=position, sample=sample,
+                    gender=gender,
+                ),
+            )
             return " ".join([encoding["."]] * 2)
 
     return "{} {}".format(encoding[genotype[0]], encoding[genotype[1]])
@@ -443,17 +474,21 @@ def parse_args(parser, args=None):
     """
     # The input file
     group = parser.add_argument_group("Input Files")
-    group.add_argument("--vcf", type=str, metavar="FILE", required=True,
-                       help="The VCF file.")
-    group.add_argument("--ped", type=str, metavar="FILE", required=True,
-                       help="The PED file.")
+    group.add_argument(
+        "--vcf", type=str, metavar="FILE", required=True,
+        help="The VCF file.",
+    )
+    group.add_argument(
+        "--ped", type=str, metavar="FILE", required=True,
+        help="The PED file.",
+    )
 
     # The output file
     group = parser.add_argument_group("Output Files")
-    group.add_argument("-o", "--out", type=str, metavar="STR",
-                       default="vcf_to_tped",
-                       help=("The suffix of the output file. "
-                             "[Default: %(default)s]"))
+    group.add_argument(
+        "-o", "--out", type=str, metavar="STR", default="vcf_to_tped",
+        help="The suffix of the output file. [Default: %(default)s]",
+    )
 
     if args is not None:
         return parser.parse_args(args)
