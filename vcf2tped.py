@@ -98,7 +98,7 @@ def main(args=None):
         sample_info = read_ped(args.ped)
 
         # Converting
-        convert_vcf(args.vcf, sample_info, args.out)
+        convert_vcf(args.vcf, sample_info, args.out, args.skip_haploid)
 
     except KeyboardInterrupt:
         logger.info("Cancelled by user", file=sys.stderr)
@@ -133,16 +133,18 @@ def read_ped(i_filename):
     return data.set_index("IID", drop=False, verify_integrity=True)
 
 
-def convert_vcf(i_filename, sample_info, o_prefix):
+def convert_vcf(i_filename, sample_info, o_prefix, skip_haploid):
     """Reads a VCF and creates a TPED/TFAM from it.
 
     :param i_filename: the name of the VCF file (might be gzip).
-    :param sample_info: information about the samples
+    :param sample_info: information about the samples.
     :param o_prefix: the prefix of the output files.
+    :param skip_haploid: whether to check haploid genotypes or not.
 
     :type i_filename: string
     :type sample_info: pandas.DataFrame
     :type o_prefix: string
+    :type skip_haploid: bool
 
     """
     # Some regular expression
@@ -275,7 +277,7 @@ def convert_vcf(i_filename, sample_info, o_prefix):
             genotypes = [allele_split_re.split(i) for i in genotypes]
             genotypes = [
                 recode_genotype(g, g_map, chrom, pos, sample_info.iloc[i, 0],
-                                sample_info.iloc[i, 4])
+                                sample_info.iloc[i, 4], skip_haploid)
                 for i, g in enumerate(genotypes)
             ]
             print("\t".join(first_part + genotypes), file=o_file)
@@ -294,7 +296,8 @@ def convert_vcf(i_filename, sample_info, o_prefix):
         indel_ref.close()
 
 
-def recode_genotype(genotype, encoding, chromosome, position, sample, gender):
+def recode_genotype(genotype, encoding, chromosome, position, sample, gender,
+                    skip_haploid):
     """Encodes the genotypes.
 
     :param genotype: the genotypes (list of alleles)
@@ -303,6 +306,7 @@ def recode_genotype(genotype, encoding, chromosome, position, sample, gender):
     :param position: the position of the marker
     :param sample: the ID of the sample
     :param gender: the gender of the sample
+    :param skip_haploid: whether to check or not the haploid genotypes
 
     :type genotype: list of str
     :type encoding: map
@@ -310,6 +314,7 @@ def recode_genotype(genotype, encoding, chromosome, position, sample, gender):
     :type position: str
     :type sample: str
     :type gender: int
+    :type skip_haploid: bool
 
     :returns: a string with the two alleles separated by a space.
 
@@ -318,6 +323,17 @@ def recode_genotype(genotype, encoding, chromosome, position, sample, gender):
         # This is an haploid genotype
         if gender == 1 and (chromosome == "23" or chromosome == "24"):
             return " ".join(encoding[genotype[0]] * 2)
+
+        elif skip_haploid:
+            logger.warning(
+                "chr{chrom}:{pos}: {sample} (gender {gender}): haploid call "
+                "set as homozygous".format(
+                    chrom=chromosome, pos=position, sample=sample,
+                    gender=gender,
+                ),
+            )
+            return " ".join(encoding[genotype[0]] * 2)
+
         else:
             logger.warning(
                 "chr{chrom}:{pos}: {sample} (gender {gender}): haploid call "
@@ -484,6 +500,14 @@ def parse_args(parser, args=None):
     group.add_argument(
         "--ped", type=str, metavar="FILE", required=True,
         help="The PED file.",
+    )
+
+    # Program options
+    group = parser.add_argument_group("Options")
+    group.add_argument(
+        "--skip-haploid-check", action="store_true", dest="skip_haploid",
+        help="If used, no check will be performed for haploid genotypes. They "
+             "will be converted to homozygous of the same allele.",
     )
 
     # The output file
@@ -791,6 +815,51 @@ class TestVCF2TPED(unittest.TestCase):
             "22\trs149201\t0\t16050408\t0 0\t0 0\t0 0\n"
             "23\trs149202\t0\t16050408\t0 0\t0 0\tT T\n"
             "24\trs149203\t0\t16050408\t0 0\t0 0\tT T\n"
+            "24\trs149204\t0\t16050408\tT T\tT C\tT C\n"
+            "23\trs149205\t0\t16050408\tT T\tT C\tT C\n"
+        )
+
+        content = None
+        with open(self.prefix_gender + ".snv.2_alleles.tped", "r") as i_file:
+            content = i_file.read()
+
+        self.assertEqual(output, content)
+
+    def test_gender_skip_haploid_check(self):
+        """Tests effect of gender on genotypes when skipping haploid check."""
+        args = [
+            "--vcf", os.path.join("test", "input.gender.vcf"),
+            "--ped", os.path.join("test", "input.gender.ped"),
+            "--out", self.prefix_gender,
+            "--skip-haploid-check"
+        ]
+        with self._assertLogs(level=logging.WARNING) as logs:
+            main(args=args)
+
+        # Checking the log
+        self.assertEqual(
+            ["WARNING:vcf2tped:chr22:16050408: HG00096 (gender 2): haploid "
+             "call set as homozygous",
+             "WARNING:vcf2tped:chr22:16050408: HG00097 (gender 0): haploid "
+             "call set as homozygous",
+             "WARNING:vcf2tped:chr22:16050408: HG00099 (gender 1): haploid "
+             "call set as homozygous",
+             "WARNING:vcf2tped:chr23:16050408: HG00096 (gender 2): haploid "
+             "call set as homozygous",
+             "WARNING:vcf2tped:chr23:16050408: HG00097 (gender 0): haploid "
+             "call set as homozygous",
+             "WARNING:vcf2tped:chr24:16050408: HG00096 (gender 2): haploid "
+             "call set as homozygous",
+             "WARNING:vcf2tped:chr24:16050408: HG00097 (gender 0): haploid "
+             "call set as homozygous"],
+            logs.output,
+        )
+
+        # Checking the output
+        output = (
+            "22\trs149201\t0\t16050408\tT T\tC C\tT T\n"
+            "23\trs149202\t0\t16050408\tT T\tC C\tT T\n"
+            "24\trs149203\t0\t16050408\tT T\tT T\tT T\n"
             "24\trs149204\t0\t16050408\tT T\tT C\tT C\n"
             "23\trs149205\t0\t16050408\tT T\tT C\tT C\n"
         )
