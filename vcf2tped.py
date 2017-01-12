@@ -36,6 +36,7 @@ import shlex
 import logging
 import argparse
 import unittest
+import collections
 from shutil import copyfile
 from collections import defaultdict
 
@@ -85,13 +86,13 @@ def main(args=None):
             logger.addHandler(sh)
             logger.setLevel(logging.INFO)
 
-        logger.info("This is {script_name} version {version}".format(
-            script_name=os.path.basename(sys.argv[0]),
-            version=__version__,
-        ))
-        logger.info("Arguments: {}".format(
-            " ".join(shlex.quote(part) for part in sys.argv[1:]),
-        ))
+            logger.info("This is {script_name} version {version}".format(
+                script_name=os.path.basename(sys.argv[0]),
+                version=__version__,
+            ))
+            logger.info("Arguments: {}".format(
+                " ".join(shlex.quote(part) for part in sys.argv[1:]),
+            ))
 
         # Reading the ped file
         sample_info = read_ped(args.ped)
@@ -105,7 +106,9 @@ def main(args=None):
 
     except ProgramError as e:
         logger.error(e.message)
-        parser.error(e.message)
+        if not _TESTING_MODE:
+            parser.error(e.message)
+        sys.exit(1)
 
 
 def read_ped(i_filename):
@@ -516,7 +519,12 @@ class ProgramError(Exception):
         return self.message
 
 
-class Test(unittest.TestCase):
+class TestVCF2TPED(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        global _TESTING_MODE
+        _TESTING_MODE = True
+
     def setUp(self):
         """Setting up the test cases."""
         # Setting up the parser information
@@ -545,7 +553,9 @@ class Test(unittest.TestCase):
         ]
 
         # Executing the script
-        main(args=args)
+        with self._assertLogs() as logs:
+            main(args=args)
+        self.logs = logs.output
 
     def tearDown(self):
         """Deletes the output files."""
@@ -572,8 +582,17 @@ class Test(unittest.TestCase):
             "--out", self.prefix,
         ]
         with self.assertRaises(SystemExit) as cm:
-            main(args=args)
-            self.assertEqual(cm.exception.code, 2)
+            with self._assertLogs(level=logging.ERROR) as logs:
+                main(args=args)
+
+        # Checking the exception
+        self.assertNotEqual(cm.exception.code, 0)
+
+        # Checking the error log
+        self.assertEqual(
+            ["ERROR:vcf2tped:test/wrong_input.vcf: no such file"],
+            logs.output,
+        )
 
         args = [
             "--vcf", os.path.join("test", "input.vcf"),
@@ -581,8 +600,17 @@ class Test(unittest.TestCase):
             "--out", self.prefix,
         ]
         with self.assertRaises(SystemExit) as cm:
-            main(args=args)
-            self.assertEqual(cm.exception.code, 2)
+            with self._assertLogs(level=logging.ERROR) as logs:
+                main(args=args)
+
+        # Checking the exception
+        self.assertNotEqual(cm.exception.code, 0)
+
+        # Checking the error log
+        self.assertEqual(
+            ["ERROR:vcf2tped:test/wrong_input.ped: no such file"],
+            logs.output,
+        )
 
     def test_missing_samples_in_pedfile(self):
         """Tests the script raises an error sample missing in pedfile."""
@@ -592,8 +620,17 @@ class Test(unittest.TestCase):
             "--out", self.prefix,
         ]
         with self.assertRaises(SystemExit) as cm:
-            main(args=args)
-            self.assertEqual(cm.exception.code, 2)
+            with self._assertLogs(level=logging.ERROR) as logs:
+                main(args=args)
+
+        # Checking the exception
+        self.assertNotEqual(cm.exception.code, 0)
+
+        # Checking the error log
+        self.assertEqual(
+            ["ERROR:vcf2tped:samples in PED are not the same in the VCF"],
+            logs.output,
+        )
 
     def test_tfams(self):
         output = (
@@ -719,6 +756,120 @@ class Test(unittest.TestCase):
             content = i_file.read()
 
         self.assertEqual(output, content)
+
+    def test_logs(self):
+        """Checks the logs."""
+        self.assertEqual(
+            ["WARNING:vcf2tped:chr22:16050408: HG00096 (gender 2): haploid "
+             "call set as no call",
+             "WARNING:vcf2tped:chr22:16050408: HG00097 (gender 0): haploid "
+             "call set as no call",
+             "WARNING:vcf2tped:chr22:16050408: HG00099 (gender 1): haploid "
+             "call set as no call",
+             "WARNING:vcf2tped:chr23:16050408: HG00096 (gender 2): haploid "
+             "call set as no call",
+             "WARNING:vcf2tped:chr23:16050408: HG00097 (gender 0): haploid "
+             "call set as no call",
+             "WARNING:vcf2tped:chr24:16050408: HG00096 (gender 2): haploid "
+             "call set as no call",
+             "WARNING:vcf2tped:chr24:16050408: HG00097 (gender 0): haploid "
+             "call set as no call"],
+            self.logs,
+        )
+
+    def _assertLogs(self, logger=None, level=None):
+        """Compatibility 'assertLogs' function for Python < 3.4."""
+        if hasattr(self, "assertLogs"):
+            return self.assertLogs(logger, level)
+
+        else:
+            return AssertLogsContext_Compatibility(self, logger, level)
+
+
+class BaseTestCaseContext_Compatibility:
+
+    def __init__(self, test_case):
+        self.test_case = test_case
+
+    def _raiseFailure(self, standardMsg):
+        msg = self.test_case._formatMessage(self.msg, standardMsg)
+        raise self.test_case.failureException(msg)
+
+
+_LoggingWatcher = collections.namedtuple("_LoggingWatcher",
+                                         ["records", "output"])
+
+
+class CapturingHandler_Compatibility(logging.Handler):
+    """
+    A logging handler capturing all (raw and formatted) logging output.
+    """
+
+    def __init__(self):
+        logging.Handler.__init__(self)
+        self.watcher = _LoggingWatcher([], [])
+
+    def flush(self):
+        pass
+
+    def emit(self, record):
+        self.watcher.records.append(record)
+        msg = self.format(record)
+        self.watcher.output.append(msg)
+
+
+class AssertLogsContext_Compatibility(BaseTestCaseContext_Compatibility):
+    """A context manager used to implement TestCase.assertLogs()."""
+
+    LOGGING_FORMAT = "%(levelname)s:%(name)s:%(message)s"
+
+    def __init__(self, test_case, logger_name, level):
+        BaseTestCaseContext_Compatibility.__init__(self, test_case)
+        self.logger_name = logger_name
+        if level:
+            # Python < 3.4 logging doesn't have a _nameToLevel dictionary
+            nameToLevel = {
+                'CRITICAL': logging.CRITICAL,
+                'ERROR': logging.ERROR,
+                'WARN': logging.WARNING,
+                'WARNING': logging.WARNING,
+                'INFO': logging.INFO,
+                'DEBUG': logging.DEBUG,
+                'NOTSET': logging.NOTSET,
+            }
+            self.level = nameToLevel.get(level, level)
+        else:
+            self.level = logging.INFO
+        self.msg = None
+
+    def __enter__(self):
+        if isinstance(self.logger_name, logging.Logger):
+            logger = self.logger = self.logger_name
+        else:
+            logger = self.logger = logging.getLogger(self.logger_name)
+        formatter = logging.Formatter(self.LOGGING_FORMAT)
+        handler = CapturingHandler_Compatibility()
+        handler.setFormatter(formatter)
+        self.watcher = handler.watcher
+        self.old_handlers = logger.handlers[:]
+        self.old_level = logger.level
+        self.old_propagate = logger.propagate
+        logger.handlers = [handler]
+        logger.setLevel(self.level)
+        logger.propagate = False
+        return handler.watcher
+
+    def __exit__(self, exc_type, exc_value, tb):
+        self.logger.handlers = self.old_handlers
+        self.logger.propagate = self.old_propagate
+        self.logger.setLevel(self.old_level)
+        if exc_type is not None:
+            # let unexpected exceptions pass through
+            return False
+        if len(self.watcher.records) == 0:
+            self._raiseFailure(
+                "no logs of level {} or higher triggered on {}"
+                .format(logging.getLevelName(self.level), self.logger.name))
 
 
 # Calling the main, if necessary
