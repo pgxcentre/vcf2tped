@@ -3,7 +3,7 @@
 
 # vcf2tped - VCF to PLINK converter #
 
-*Version 0.3*
+*Version 0.4*
 
 _vcf2tped_ is a VCF converter that creates a transposed _pedfile_ compatible
 with the PLINK analysis toolkit. It separates variations in four different
@@ -21,7 +21,7 @@ the PLINK toolkit (since PLINK cannot work with multi-allelic variations).
 ## Dependencies ##
 
 The tool only requires a standard installation of [Python](http://python.org/)
-version 2.7 or higher, or version 3.4 or higher.
+version 2.7 or higher, or version 3.3 or higher.
 
 The tool has been tested on Linux, but should work on Windows and MacOS
 operating softwares as well.
@@ -34,19 +34,26 @@ command). All users, you can execute the script using the following command:
 
 ```console
 $ vcf2tped.py --help
-usage: vcf2tped.py [-h] --vcf FILE --ped FILE [-o STR]
+usage: vcf2tped.py [-h] [-v] --vcf FILE --ped FILE [--skip-haploid-check]
+                   [-o STR]
 
-Convert a VCF to a TPED (version 0.3).
+Convert a VCF to a TPED (version 0.4).
 
 optional arguments:
-  -h, --help         show this help message and exit
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
 
 Input Files:
-  --vcf FILE         The VCF file.
-  --ped FILE         The PED file.
+  --vcf FILE            The VCF file.
+  --ped FILE            The PED file.
+
+Options:
+  --skip-haploid-check  If used, no check will be performed for haploid
+                        genotypes. They will be converted to homozygous of the
+                        same allele.
 
 Output Files:
-  -o STR, --out STR  The suffix of the output file. [Default: vcf_to_tped]
+  -o STR, --out STR     The suffix of the output file. [Default: vcf_to_tped]
 ```
 
 
@@ -55,7 +62,7 @@ Output Files:
 Here is an example of a simple run of the script.
 
 ```console
-$ ../vcf2tped.py --vcf input.vcf --ped input.ped 
+$ vcf2tped.py --vcf input.vcf --ped input.ped
 # Command used:
 ../vcf2tped.py \
     --vcf input.vcf \

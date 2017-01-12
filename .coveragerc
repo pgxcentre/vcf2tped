@@ -5,6 +5,9 @@ source = vcf2tped
 [report]
 exclude_lines = 
     pragma: no cover
+    class AssertLogsContext_Compatibility
+    class CapturingHandler_Compatibility
+    class BaseTestCaseContext_Compatibility
 
 [html]
-title = Coverage report - project_x
+title = Coverage report - vcf2tped
