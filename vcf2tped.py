@@ -632,6 +632,34 @@ class TestVCF2TPED(unittest.TestCase):
             logs.output,
         )
 
+    def test_not_a_vcf_file(self):
+        """Tests when the input file is not a vcf file."""
+        args = [
+            "--vcf", os.path.join("test", "input.notvcf"),
+            "--ped", os.path.join("test", "input.ped"),
+            "--out", self.prefix,
+        ]
+
+        # Creating the vcf file
+        with open(os.path.join("test", "input.notvcf"), "w"):
+            pass
+
+        with self.assertRaises(SystemExit) as cm:
+            with self._assertLogs(level=logging.ERROR) as logs:
+                main(args=args)
+
+        # Deleting the VCF file
+        os.remove(os.path.join("test", "input.notvcf"))
+
+        # Checking the exception
+        self.assertNotEqual(cm.exception.code, 0)
+
+        # Checking the error log
+        self.assertEqual(
+            ["ERROR:vcf2tped:test/input.notvcf: not a vcf file"],
+            logs.output,
+        )
+
     def test_tfams(self):
         output = (
             "HG00096\tHG00096\t0\t0\t0\t-9\n"
