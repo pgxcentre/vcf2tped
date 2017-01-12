@@ -28,17 +28,6 @@
 
 from __future__ import print_function
 
-
-__author__ = "Louis-Philippe Lemieux Perreault"
-__copyright__ = ("Copyright 2015 Louis-Philippe Lemieux Perreault. "
-                 "All rights reserved.")
-__license__ = "MIT"
-__credits__ = ["Louis-Philippe Lemieux Perreault", ]
-__maintainer__ = "Louis-Philippe Lemieux Perreault"
-__email__ = "louis-philippe.lemieux.perreault@statgen.org"
-__status__ = "Development"
-
-
 import os
 import re
 import sys
@@ -49,6 +38,16 @@ from shutil import copyfile
 from collections import defaultdict
 
 import pandas as pd
+
+
+__author__ = "Louis-Philippe Lemieux Perreault"
+__copyright__ = ("Copyright 2015 Louis-Philippe Lemieux Perreault. "
+                 "All rights reserved.")
+__license__ = "MIT"
+__credits__ = ["Louis-Philippe Lemieux Perreault", ]
+__maintainer__ = "Louis-Philippe Lemieux Perreault"
+__email__ = "louis-philippe.lemieux.perreault@statgen.org"
+__status__ = "Development"
 
 
 # The version of the script
